@@ -1,0 +1,56 @@
+version: "3.8"
+services:
+  app:
+    build:
+      args:
+        user: server
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: emsagateway
+    container_name: emsagateway-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    ports:
+      - 6001:6001
+    volumes:
+      - ./:/var/www
+    networks:
+      - emsagateway
+    user: root
+
+  nginx:
+    image: nginx:alpine
+    container_name: emsagateway-nginx
+    restart: unless-stopped
+    ports:
+      - 81:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx-local:/etc/nginx/conf.d/
+    networks:
+      - emsagateway
+
+  postgres:
+    image: postgres:14.2
+    restart: always
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: pgsql
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - emsagateway
+
+volumes:
+  postgres_data:
+
+networks:
+  emsagateway:
+    driver: bridge
